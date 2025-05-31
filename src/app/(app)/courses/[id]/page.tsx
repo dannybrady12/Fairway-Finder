@@ -1,0 +1,238 @@
+import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { notFound } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
+import CourseWeather from '@/components/courses/CourseWeather';
+import CourseRankingDisplay from '@/components/courses/CourseRankingDisplay';
+import ReviewCard from '@/components/reviews/ReviewCard';
+import ReviewSubmitButton from '@/components/reviews/ReviewSubmitButton';
+
+export default async function CourseDetailPage({ params }: { params: { id: string } }) {
+  const supabase = createServerSupabaseClient();
+  
+  // Get course details
+  const { data: course } = await supabase
+    .from('courses')
+    .select('*')
+    .eq('id', params.id)
+    .single();
+    
+  if (!course) {
+    notFound();
+  }
+  
+  // Get course holes
+  const { data: holes } = await supabase
+    .from('course_holes')
+    .select('*')
+    .eq('course_id', params.id)
+    .order('hole_number', { ascending: true });
+  
+  // Get course images
+  const { data: images } = await supabase
+    .from('course_images')
+    .select('*')
+    .eq('course_id', params.id)
+    .order('is_primary', { ascending: false });
+  
+  // Get course reviews
+  const { data: reviews } = await supabase
+    .from('course_reviews')
+    .select('*, user:users(*)')
+    .eq('course_id', params.id)
+    .order('created_at', { ascending: false });
+  
+  // Get current user
+  const { data: { session } } = await supabase.auth.getSession();
+  const currentUser = session?.user;
+  
+  // Check if user has already reviewed this course
+  let userReview = null;
+  if (currentUser) {
+    const { data: existingReview } = await supabase
+      .from('course_reviews')
+      .select('*')
+      .eq('course_id', params.id)
+      .eq('user_id', currentUser.id)
+      .single();
+      
+    userReview = existingReview;
+  }
+  
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main content */}
+        <div className="lg:col-span-2">
+          {/* Course header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-2">{course.name}</h1>
+            <div className="text-gray-600 mb-4">
+              {course.city}, {course.state}, {course.country}
+            </div>
+            
+            {/* Course images */}
+            {images && images.length > 0 ? (
+              <div className="relative h-80 rounded-lg overflow-hidden mb-4">
+                <Image
+                  src={images[0].image_url}
+                  alt={course.name}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            ) : (
+              <div className="h-80 bg-gray-200 rounded-lg flex items-center justify-center mb-4">
+                <span className="text-gray-500">No images available</span>
+              </div>
+            )}
+            
+            {/* Course details */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-sm text-gray-500">Par</div>
+                <div className="text-xl font-semibold">{course.par || 'N/A'}</div>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-sm text-gray-500">Holes</div>
+                <div className="text-xl font-semibold">{course.total_holes}</div>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-sm text-gray-500">Rating</div>
+                <div className="text-xl font-semibold">{course.rating || 'N/A'}</div>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-sm text-gray-500">Slope</div>
+                <div className="text-xl font-semibold">{course.slope || 'N/A'}</div>
+              </div>
+            </div>
+            
+            {/* Course description */}
+            {course.description && (
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold mb-3">About</h2>
+                <p className="text-gray-700">{course.description}</p>
+              </div>
+            )}
+            
+            {/* Course holes */}
+            {holes && holes.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold mb-3">Holes</h2>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full bg-white border border-gray-200">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hole</th>
+                        <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Par</th>
+                        <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Yards</th>
+                        <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Handicap</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {holes.map((hole) => (
+                        <tr key={hole.id}>
+                          <td className="py-2 px-3 whitespace-nowrap">{hole.hole_number}</td>
+                          <td className="py-2 px-3 whitespace-nowrap">{hole.par}</td>
+                          <td className="py-2 px-3 whitespace-nowrap">{hole.distance_yards || 'N/A'}</td>
+                          <td className="py-2 px-3 whitespace-nowrap">{hole.handicap_index || 'N/A'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            
+            {/* Reviews section */}
+            <div className="mb-8">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Reviews</h2>
+                {currentUser && !userReview && (
+                  <ReviewSubmitButton courseId={params.id} />
+                )}
+              </div>
+              
+              {reviews && reviews.length > 0 ? (
+                <div className="space-y-4">
+                  {reviews.map((review) => (
+                    <ReviewCard key={review.id} review={review} showCourse={false} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 bg-gray-50 rounded-lg">
+                  <p className="text-gray-500 mb-4">No reviews yet. Be the first to review this course!</p>
+                  {currentUser ? (
+                    <ReviewSubmitButton courseId={params.id} />
+                  ) : (
+                    <Link href="/auth/login" className="inline-block px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700">
+                      Log in to review
+                    </Link>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Course ranking */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-3">Course Ranking</h3>
+            <CourseRankingDisplay course={course} />
+          </div>
+          
+          {/* Weather */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-3">Weather</h3>
+            <CourseWeather course={course} />
+          </div>
+          
+          {/* Contact info */}
+          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+            <h3 className="text-lg font-semibold mb-3">Contact Information</h3>
+            <div className="space-y-2 text-gray-700">
+              {course.phone && (
+                <div className="flex items-start">
+                  <span className="font-medium w-20">Phone:</span>
+                  <span>{course.phone}</span>
+                </div>
+              )}
+              {course.email && (
+                <div className="flex items-start">
+                  <span className="font-medium w-20">Email:</span>
+                  <span>{course.email}</span>
+                </div>
+              )}
+              {course.website && (
+                <div className="flex items-start">
+                  <span className="font-medium w-20">Website:</span>
+                  <a href={course.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                    Visit website
+                  </a>
+                </div>
+              )}
+              {course.address && (
+                <div className="flex items-start">
+                  <span className="font-medium w-20">Address:</span>
+                  <span>{course.address}, {course.city}, {course.state} {course.postal_code}</span>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Actions */}
+          <div className="space-y-3">
+            <Link href={`/rounds/new?course=${params.id}`} className="block w-full py-2 px-4 bg-green-600 text-white text-center rounded-md hover:bg-green-700">
+              Start a Round
+            </Link>
+            <Link href={`/courses/${params.id}/photos`} className="block w-full py-2 px-4 border border-gray-300 text-gray-700 text-center rounded-md hover:bg-gray-50">
+              View All Photos
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

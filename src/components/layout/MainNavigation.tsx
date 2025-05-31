@@ -1,8 +1,9 @@
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Home, Search, User, MapPin, GolfBall } from 'lucide-react';
+import { Home, User, MapPin } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
+
+// Use a different icon since GolfBall isn't available
+import { CircleIcon } from 'lucide-react';
 
 export default async function MainNavigation() {
   const supabase = createClient();
@@ -17,7 +18,7 @@ export default async function MainNavigation() {
       </Link>
       
       <Link href="/courses" className="flex flex-col items-center text-gray-500 hover:text-green-600">
-        <GolfBall size={24} />
+        <CircleIcon size={24} />
         <span className="text-xs mt-1">Courses</span>
       </Link>
       
@@ -35,10 +36,11 @@ export default async function MainNavigation() {
         </>
       ) : (
         <Link href="/auth/login" className="flex flex-col items-center text-gray-500 hover:text-green-600">
-          <GolfBall size={24} />
+          <CircleIcon size={24} />
           <span className="text-xs mt-1">Login</span>
         </Link>
       )}
     </nav>
   );
 }
+

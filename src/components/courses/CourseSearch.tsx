@@ -1,214 +1,128 @@
-'use client';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Search } from 'lucide-react';
+import { searchCourses } from '@/lib/golfCourseAPI';
+import { Database } from '@/types/database.types';
+import CourseCard from './CourseCard';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, MapPin, Info } from 'lucide-react';
-import { GolfCourseData } from '@/lib/golfCourseAPI';
-import Link from 'next/link';
+type Course = Database['public']['Tables']['courses']['Row'];
 
-export default function CourseSearchComponent() {
+export default function CourseSearch() {
+  const [query, setQuery] = useState('');
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchPerformed, setSearchPerformed] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const initialQuery = searchParams.get('q') || '';
-  
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<GolfCourseData[]>([]);
-  const [totalResults, setTotalResults] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [error, setError] = useState('');
-  
-  // Handle search form submission
-  const handleSearch = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!searchQuery.trim()) return;
+
+  const handleSearch = useCallback(async () => {
+    if (!query.trim()) return;
     
-    setIsSearching(true);
-    setError('');
+    setLoading(true);
+    setSearchPerformed(true);
     
     try {
-      const response = await fetch(`/api/courses/search?q=${encodeURIComponent(searchQuery)}&page=${currentPage}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to search courses');
-      }
-      
-      const data = await response.json();
-      setSearchResults(data.courses);
-      setTotalResults(data.total);
-      
-      // Update URL with search query
-      router.push(`/courses?q=${encodeURIComponent(searchQuery)}`);
-    } catch (err: any) {
-      setError(err.message || 'An error occurred while searching');
-      setSearchResults([]);
-      setTotalResults(0);
+      const results = await searchCourses(query);
+      setCourses(results);
+    } catch (error) {
+      console.error('Error searching courses:', error);
+      setCourses([]);
     } finally {
-      setIsSearching(false);
+      setLoading(false);
     }
-  };
-  
-  // Load search results when page loads with query parameter
+  }, [query]);
+
   useEffect(() => {
-    if (initialQuery) {
-      handleSearch();
-    }
-  }, [initialQuery]);
-  
-  // Handle pagination
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
-    window.scrollTo(0, 0);
-    handleSearch();
-  };
-  
-  // Render verification badge
-  const renderVerificationBadge = (isVerified: boolean) => {
-    return isVerified ? (
-      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-        Verified
-      </span>
-    ) : (
-      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-        Unverified
-      </span>
-    );
-  };
-  
+    const delayDebounceFn = setTimeout(() => {
+      if (query.trim()) {
+        handleSearch();
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [query, handleSearch]);
+
   return (
-    <div className="max-w-6xl mx-auto px-4">
-      {/* Search form */}
-      <form onSubmit={handleSearch} className="mb-8">
-        <div className="flex items-center border-2 border-gray-300 rounded-full overflow-hidden bg-white">
-          <input
-            type="text"
-            placeholder="Search for golf courses by name, city, or state..."
-            className="w-full py-3 px-5 focus:outline-none"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <button
-            type="submit"
-            className="bg-green-600 text-white p-3 hover:bg-green-700 transition-colors"
-            disabled={isSearching}
-          >
-            {isSearching ? (
-              <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <Search className="h-5 w-5" />
-            )}
-          </button>
-        </div>
-      </form>
-      
-      {/* Error message */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
-          {error}
+    <div className="w-full max-w-3xl mx-auto">
+      <div className="relative mb-6">
+        <Input
+          type="text"
+          placeholder="Search for golf courses..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:border-green-500 focus:ring-1 focus:ring-green-500"
+        />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+        <Button 
+          onClick={handleSearch}
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-green-600 hover:bg-green-700 text-white rounded-full px-4 py-1 text-sm"
+        >
+          Search
+        </Button>
+      </div>
+
+      {loading && (
+        <div className="flex justify-center my-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
         </div>
       )}
-      
-      {/* Search results */}
-      {searchResults.length > 0 ? (
-        <div>
-          <div className="mb-4 text-gray-600">
-            Found {totalResults} courses matching "{searchQuery}"
-          </div>
+
+      {searchPerformed && !loading && courses.length === 0 && (
+        <div className="text-center my-8">
+          <p className="text-gray-600 mb-2">No courses found matching &ldquo;{query}&rdquo;</p>
+          <p className="text-sm text-gray-500">Try a different search term or location</p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {searchResults.map((course) => (
-              <Link 
-                href={`/courses/${course.id}`} 
-                key={course.id}
-                className="block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-              >
-                <div className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-semibold text-lg">{course.name}</h3>
-                    {renderVerificationBadge(course.isVerified)}
-                  </div>
-                  
-                  <div className="flex items-center text-gray-500 text-sm mb-3">
-                    <MapPin className="h-4 w-4 mr-1" />
-                    <span>{course.city}, {course.state}</span>
-                  </div>
-                  
-                  <div className="flex justify-between text-sm">
-                    <div>
-                      <span className="text-gray-500">Holes:</span> {course.holes}
-                    </div>
-                    {course.teeBoxes && course.teeBoxes.length > 0 && (
-                      <>
-                        <div>
-                          <span className="text-gray-500">Par:</span> {course.teeBoxes[0].par}
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Rating:</span> {course.teeBoxes[0].rating}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </Link>
+          <div className="mt-6 p-4 bg-green-50 rounded-lg">
+            <h3 className="font-medium text-green-800 mb-2">Can&apos;t find your course?</h3>
+            <p className="text-sm text-green-700 mb-3">
+              Help grow our database by adding missing courses.
+            </p>
+            <Button 
+              onClick={() => router.push('/courses/add')}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              Add a Course
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {!loading && courses.length > 0 && (
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Search Results</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {courses.map((course) => (
+              <CourseCard key={course.id} course={course} />
             ))}
           </div>
           
-          {/* Pagination */}
-          {totalResults > 10 && (
-            <div className="flex justify-center space-x-2 mb-8">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className={`px-4 py-2 rounded ${
-                  currentPage === 1
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                Previous
-              </button>
-              
-              <span className="px-4 py-2 bg-green-600 text-white rounded">
-                {currentPage}
-              </span>
-              
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage * 10 >= totalResults}
-                className={`px-4 py-2 rounded ${
-                  currentPage * 10 >= totalResults
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                Next
-              </button>
+          {courses.length >= 10 && (
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+              <h3 className="font-medium text-blue-800 mb-2">Looking for a specific course?</h3>
+              <p className="text-sm text-blue-700 mb-3">
+                Try adding your city or state to narrow down results.
+              </p>
+              <p className="text-xs text-blue-600">
+                Example: &ldquo;Augusta National Georgia&rdquo; or &ldquo;Pebble Beach California&rdquo;
+              </p>
             </div>
           )}
+          
+          <div className="mt-6 p-4 bg-green-50 rounded-lg">
+            <h3 className="font-medium text-green-800 mb-2">Can&apos;t find your course?</h3>
+            <p className="text-sm text-green-700 mb-3">
+              Help grow our database by adding missing courses.
+            </p>
+            <Button 
+              onClick={() => router.push('/courses/add')}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              Add a Course
+            </Button>
+          </div>
         </div>
-      ) : searchQuery && !isSearching ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <p className="text-gray-500 mb-4">No courses found matching "{searchQuery}"</p>
-          <p className="text-gray-500">Try adjusting your search or</p>
-          <Link 
-            href="/courses/contribute" 
-            className="inline-block mt-4 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-          >
-            Add a new course
-          </Link>
-        </div>
-      ) : null}
-      
-      {/* Add new course button */}
-      <div className="text-center mt-8 mb-12">
-        <p className="text-gray-600 mb-4">Don't see the course you're looking for?</p>
-        <Link 
-          href="/courses/contribute" 
-          className="inline-block px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700"
-        >
-          Add a new course
-        </Link>
-      </div>
+      )}
     </div>
   );
 }

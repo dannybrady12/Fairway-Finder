@@ -1,4 +1,3 @@
-import { createClient } from '@/lib/supabase';
 import { Database } from '@/types/database.types';
 
 type Course = Database['public']['Tables']['courses']['Row'];
@@ -15,12 +14,8 @@ const MOCK_WEATHER_DATA = {
 /**
  * Get current weather for a location
  */
-export async function getWeatherForLocation(latitude: number, longitude: number ) {
-  // In a production app, we would use the actual API with:
-  // const url = `${WEATHER_API_URL}/current.json?key=${WEATHER_API_KEY}&q=${latitude},${longitude}`;
-  
+export async function getCurrentWeather(latitude: number, longitude: number ) {
   // For this prototype, we'll return mock data with slight randomization
-  // to simulate different weather conditions
   const tempVariation = Math.floor(Math.random() * 10) - 5; // -5 to +5 degrees
   const windVariation = Math.floor(Math.random() * 5); // 0 to +5 mph
   
@@ -35,7 +30,6 @@ export async function getWeatherForLocation(latitude: number, longitude: number 
  * Get weather forecast for a location
  */
 export async function getWeatherForecast(latitude: number, longitude: number) {
-  // In a production app, we would use the actual API
   // For this prototype, we'll return mock data
   
   const forecast = [];

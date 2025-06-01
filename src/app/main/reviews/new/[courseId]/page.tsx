@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 
+// Dynamically import the form with SSR disabled
 const CourseReviewForm = dynamic(() => import('@/components/reviews/CourseReviewForm'), { ssr: false });
 
 export default function NewReviewPage({ params }: { params: { courseId: string } }) {
@@ -10,7 +11,9 @@ export default function NewReviewPage({ params }: { params: { courseId: string }
 
   useEffect(() => {
     const getUserId = async () => {
-      const supabase = (await import('@/lib/supabase')).createBrowserClient();
+      // Import the Supabase client inside the effect — client-only
+      const { createBrowserClient } = await import('@/lib/supabase');
+      const supabase = createBrowserClient();
       const { data } = await supabase.auth.getSession();
       if (data?.session?.user?.id) {
         setUserId(data.session.user.id);
@@ -20,7 +23,7 @@ export default function NewReviewPage({ params }: { params: { courseId: string }
     getUserId();
   }, []);
 
-  if (!userId) return <p className="text-center mt-10">Loading...</p>;
+  if (!userId) return <p className="text-center mt-10">Loading review form...</p>;
 
   return (
     <div className="p-6">

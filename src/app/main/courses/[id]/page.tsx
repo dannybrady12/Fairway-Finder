@@ -126,7 +126,7 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
                 <h2 className="text-xl font-semibold">Reviews</h2>
                 {reviews.length > 0 && (
                   <span className="text-sm text-gray-600">
-                    {reviews.length} review{reviews.length > 1 ? 's' : ''} · Avg: {course?.rating?.toFixed(1) || 'N/A'}
+                    {reviews.length} review{reviews.length > 1 ? 's' : ''} · Avg: {typeof course?.rating === 'number' ? course.rating.toFixed(1) : 'N/A'}
                   </span>
                 )}
               </div>

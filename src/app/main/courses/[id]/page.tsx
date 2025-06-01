@@ -9,114 +9,96 @@ import ReviewSubmitButton from '@/components/reviews/ReviewSubmitButton';
 
 export default async function CourseDetailPage({ params }: { params: { id: string } }) {
   const supabase = createServerSupabaseClient();
-  
-  // Get course details
-  const { data: course } = await supabase
-    .from('courses')
-    .select('*')
-    .eq('id', params.id)
-    .single();
-    
-  if (!course) {
-    notFound();
-  }
-  
-  // Get course holes
-  const { data: holes } = await supabase
-    .from('course_holes')
-    .select('*')
-    .eq('course_id', params.id)
-    .order('hole_number', { ascending: true });
-  
-  // Get course images
-  const { data: images } = await supabase
-    .from('course_images')
-    .select('*')
-    .eq('course_id', params.id)
-    .order('is_primary', { ascending: false });
-  
-  // Get course reviews
-  const { data: reviews } = await supabase
-    .from('course_reviews')
-    .select('*, user:users(*)')
-    .eq('course_id', params.id)
-    .order('created_at', { ascending: false });
-  
-  // Get current user
-  const { data: { session } } = await supabase.auth.getSession();
-  const currentUser = session?.user;
-  
-  // Check if user has already reviewed this course
-  let userReview = null;
-  if (currentUser) {
-    const { data: existingReview } = await supabase
-      .from('course_reviews')
+
+  try {
+    const { data: course, error: courseError } = await supabase
+      .from('courses')
+      .select('*')
+      .eq('id', params.id)
+      .single();
+
+    if (courseError) console.error('Course fetch error:', courseError);
+    if (!course) return notFound();
+
+    const { data: holes = [] } = await supabase
+      .from('course_holes')
       .select('*')
       .eq('course_id', params.id)
-      .eq('user_id', currentUser.id)
-      .single();
-      
-    userReview = existingReview;
-  }
-  
-  return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main content */}
-        <div className="lg:col-span-2">
-          {/* Course header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">{course.name}</h1>
+      .order('hole_number', { ascending: true });
+
+    const { data: images = [] } = await supabase
+      .from('course_images')
+      .select('*')
+      .eq('course_id', params.id)
+      .order('is_primary', { ascending: false });
+
+    const { data: reviews = [] } = await supabase
+      .from('course_reviews')
+      .select('*, user:users(*)')
+      .eq('course_id', params.id)
+      .order('created_at', { ascending: false });
+
+    const sessionResult = await supabase.auth.getSession();
+    const session = sessionResult?.data?.session ?? null;
+    const currentUser = session?.user ?? null;
+
+    let userReview = null;
+    if (currentUser) {
+      try {
+        const { data: existingReview, error: userReviewError } = await supabase
+          .from('course_reviews')
+          .select('*')
+          .eq('course_id', params.id)
+          .eq('user_id', currentUser.id)
+          .single();
+        if (userReviewError) console.error('User review fetch error:', userReviewError);
+        userReview = existingReview || null;
+      } catch (err) {
+        console.error('Error fetching user review:', err);
+      }
+    }
+
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <h1 className="text-3xl font-bold mb-2">{course?.name || 'Unnamed Course'}</h1>
             <div className="text-gray-600 mb-4">
-              {course.city}, {course.state}, {course.country}
+              {course?.city}, {course?.state}, {course?.country}
             </div>
-            
-            {/* Course images */}
-            {images && images.length > 0 ? (
+
+            {images?.[0]?.image_url?.startsWith('http') ? (
               <div className="relative h-80 rounded-lg overflow-hidden mb-4">
                 <Image
                   src={images[0].image_url}
-                  alt={course.name}
+                  alt={course?.name || 'Course image'}
                   fill
                   className="object-cover"
                 />
               </div>
             ) : (
               <div className="h-80 bg-gray-200 rounded-lg flex items-center justify-center mb-4">
-                <span className="text-gray-500">No images available</span>
+                <span className="text-gray-500">No valid image found</span>
               </div>
             )}
-            
-            {/* Course details */}
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-500">Par</div>
-                <div className="text-xl font-semibold">{course.par || 'N/A'}</div>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-500">Holes</div>
-                <div className="text-xl font-semibold">{course.total_holes}</div>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-500">Rating</div>
-                <div className="text-xl font-semibold">{course.rating || 'N/A'}</div>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-500">Slope</div>
-                <div className="text-xl font-semibold">{course.slope || 'N/A'}</div>
-              </div>
+              {['par', 'total_holes', 'rating', 'slope'].map((field, idx) => (
+                <div key={idx} className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-500">{field.replace('_', ' ').toUpperCase()}</div>
+                  <div className="text-xl font-semibold">{course?.[field] || 'N/A'}</div>
+                </div>
+              ))}
             </div>
-            
-            {/* Course description */}
-            {course.description && (
+
+            {course?.description && (
               <div className="mb-8">
                 <h2 className="text-xl font-semibold mb-3">About</h2>
                 <p className="text-gray-700">{course.description}</p>
               </div>
             )}
-            
-            {/* Course holes */}
-            {holes && holes.length > 0 && (
+
+            {holes.length > 0 && (
               <div className="mb-8">
                 <h2 className="text-xl font-semibold mb-3">Holes</h2>
                 <div className="overflow-x-auto">
@@ -143,18 +125,23 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
                 </div>
               </div>
             )}
-            
-            {/* Reviews section */}
+
             <div className="mb-8">
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex justify-between items-center mb-1">
                 <h2 className="text-xl font-semibold">Reviews</h2>
-                {currentUser && !userReview && (
-                  <ReviewSubmitButton courseId={params.id} />
+                {reviews.length > 0 && (
+                  <span className="text-sm text-gray-600">
+                    {reviews.length} review{reviews.length > 1 ? 's' : ''} · Avg: {typeof course?.rating === 'number' ? course.rating.toFixed(1) : 'N/A'}
+                  </span>
                 )}
               </div>
-              
-              {reviews && reviews.length > 0 ? (
-                <div className="space-y-4">
+
+              {currentUser && !userReview && (
+                <ReviewSubmitButton courseId={params.id} />
+              )}
+
+              {reviews.length > 0 ? (
+                <div className="space-y-4 mt-4">
                   {reviews.map((review) => (
                     <ReviewCard key={review.id} review={review} showCourse={false} />
                   ))}
@@ -173,66 +160,56 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
               )}
             </div>
           </div>
-        </div>
-        
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Course ranking */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-3">Course Ranking</h3>
-            <CourseRankingDisplay course={course} />
-          </div>
-          
-          {/* Weather */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-3">Weather</h3>
-            <CourseWeather course={course} />
-          </div>
-          
-          {/* Contact info */}
-          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
-            <h3 className="text-lg font-semibold mb-3">Contact Information</h3>
-            <div className="space-y-2 text-gray-700">
-              {course.phone && (
-                <div className="flex items-start">
-                  <span className="font-medium w-20">Phone:</span>
-                  <span>{course.phone}</span>
-                </div>
-              )}
-              {course.email && (
-                <div className="flex items-start">
-                  <span className="font-medium w-20">Email:</span>
-                  <span>{course.email}</span>
-                </div>
-              )}
-              {course.website && (
-                <div className="flex items-start">
-                  <span className="font-medium w-20">Website:</span>
-                  <a href={course.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                    Visit website
-                  </a>
-                </div>
-              )}
-              {course.address && (
-                <div className="flex items-start">
-                  <span className="font-medium w-20">Address:</span>
-                  <span>{course.address}, {course.city}, {course.state} {course.postal_code}</span>
-                </div>
-              )}
+
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Course Ranking</h3>
+              {course?.name ? <CourseRankingDisplay course={course} /> : <p className="text-red-500">Course data incomplete</p>}
             </div>
-          </div>
-          
-          {/* Actions */}
-          <div className="space-y-3">
-            <Link href={`/rounds/new?course=${params.id}`} className="block w-full py-2 px-4 bg-green-600 text-white text-center rounded-md hover:bg-green-700">
-              Start a Round
-            </Link>
-            <Link href={`/courses/${params.id}/photos`} className="block w-full py-2 px-4 border border-gray-300 text-gray-700 text-center rounded-md hover:bg-gray-50">
-              View All Photos
-            </Link>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Weather</h3>
+              {course?.name ? <CourseWeather course={course} /> : <p className="text-red-500">Weather data unavailable</p>}
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+              <h3 className="text-lg font-semibold mb-3">Contact Information</h3>
+              <div className="space-y-2 text-gray-700">
+                {course?.phone && <div><strong>Phone:</strong> {course.phone}</div>}
+                {course?.email && <div><strong>Email:</strong> {course.email}</div>}
+                {course?.website && (
+                  <div>
+                    <strong>Website:</strong> <a href={course.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Visit</a>
+                  </div>
+                )}
+                {course?.address && (
+                  <div><strong>Address:</strong> {course.address}, {course.city}, {course.state} {course.postal_code}</div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="bg-green-50 border border-green-200 p-4 rounded-md text-green-800">
+                <h3 className="text-lg font-semibold mb-2">Ready to play?</h3>
+                <p className="mb-3">Start tracking your round shot-by-shot in real time.</p>
+                <Link
+                  href={`/rounds/new?course=${params.id}`}
+                  className="inline-block bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  Start a Round
+                </Link>
+              </div>
+              <Link href={`/courses/${params.id}/photos`} className="block w-full py-2 px-4 border border-gray-300 text-gray-700 text-center rounded-md hover:bg-gray-50">
+                View All Photos
+              </Link>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  } catch (err) {
+    console.error('Unhandled error in Course Detail Page:', err);
+    return notFound();
+  }
 }
+

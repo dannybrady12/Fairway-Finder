@@ -44,13 +44,19 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
 
     let userReview = null;
     if (currentUser) {
-      const { data: existingReview } = await supabase
-        .from('course_reviews')
-        .select('*')
-        .eq('course_id', params.id)
-        .eq('user_id', currentUser.id)
-        .single();
-      userReview = existingReview || null;
+      try {
+        const { data: existingReview, error: userReviewError } = await supabase
+          .from('course_reviews')
+          .select('*')
+          .eq('course_id', params.id)
+          .eq('user_id', currentUser.id)
+          .single();
+        if (userReviewError) console.error('User review fetch error:', userReviewError);
+        userReview = existingReview || null;
+      } catch (err) {
+        console.error('Error fetching user review:', err);
+      }
+    }
     }
 
     return (

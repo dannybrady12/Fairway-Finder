@@ -1,7 +1,9 @@
 import { createBrowserClient } from '@supabase/ssr';
-import { createClient } from '@supabase/supabase-js';
 
-// Only call this inside `useEffect` or client-safe code
+// ✅ Use this everywhere in the app that used to call createBrowserClient
+export { createBrowserClient };
+
+// ✅ Use this in client-only logic like the review form
 export function createSupabaseClient() {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

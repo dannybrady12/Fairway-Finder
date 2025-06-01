@@ -11,8 +11,6 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
   const supabase = createServerSupabaseClient();
 
   try {
-    console.log('Course Detail Page Params:', params);
-
     const { data: course, error: courseError } = await supabase
       .from('courses')
       .select('*')
@@ -20,51 +18,38 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
       .single();
 
     if (courseError) console.error('Course fetch error:', courseError);
-    if (!course) {
-      console.warn('No course found for ID:', params.id);
-      return notFound();
-    }
+    if (!course) return notFound();
 
-    const { data: holes = [], error: holesError } = await supabase
+    const { data: holes = [] } = await supabase
       .from('course_holes')
       .select('*')
       .eq('course_id', params.id)
       .order('hole_number', { ascending: true });
 
-    if (holesError) console.error('Holes fetch error:', holesError);
-
-    const { data: images = [], error: imagesError } = await supabase
+    const { data: images = [] } = await supabase
       .from('course_images')
       .select('*')
       .eq('course_id', params.id)
       .order('is_primary', { ascending: false });
 
-    if (imagesError) console.error('Images fetch error:', imagesError);
-
-    const { data: reviews = [], error: reviewsError } = await supabase
+    const { data: reviews = [] } = await supabase
       .from('course_reviews')
       .select('*, user:users(*)')
       .eq('course_id', params.id)
       .order('created_at', { ascending: false });
 
-    if (reviewsError) console.error('Reviews fetch error:', reviewsError);
-
     const sessionResult = await supabase.auth.getSession();
     const session = sessionResult?.data?.session ?? null;
     const currentUser = session?.user ?? null;
 
-    if (!session) console.warn('No session returned from Supabase');
-
     let userReview = null;
     if (currentUser) {
-      const { data: existingReview, error: userReviewError } = await supabase
+      const { data: existingReview } = await supabase
         .from('course_reviews')
         .select('*')
         .eq('course_id', params.id)
         .eq('user_id', currentUser.id)
         .single();
-
-      if (userReviewError) console.error('User review fetch error:', userReviewError);
       userReview = existingReview || null;
     }
 
@@ -77,13 +62,18 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
               {course?.city}, {course?.state}, {course?.country}
             </div>
 
-            {images?.[0]?.image_url ? (
+            {images?.[0]?.image_url?.startsWith('http') ? (
               <div className="relative h-80 rounded-lg overflow-hidden mb-4">
-                <Image src={images[0].image_url} alt={course.name} fill className="object-cover" />
+                <Image
+                  src={images[0].image_url}
+                  alt={course?.name || 'Course image'}
+                  fill
+                  className="object-cover"
+                />
               </div>
             ) : (
               <div className="h-80 bg-gray-200 rounded-lg flex items-center justify-center mb-4">
-                <span className="text-gray-500">No images available</span>
+                <span className="text-gray-500">No valid image found</span>
               </div>
             )}
 

@@ -52,10 +52,11 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
     if (reviewsError) console.error('Reviews fetch error:', reviewsError);
     console.log('Reviews:', reviews);
 
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError) console.error('Session fetch error:', sessionError);
+    const sessionResult = await supabase.auth.getSession();
+    const session = sessionResult?.data?.session ?? null;
+    const currentUser = session?.user ?? null;
+
     if (!session) console.warn('No session returned from Supabase');
-    const currentUser = session?.user;
 
     let userReview = null;
     if (currentUser) {

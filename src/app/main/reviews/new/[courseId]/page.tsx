@@ -1,33 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { createBrowserClient } from '@/lib/supabase';
-import CourseReviewForm from '@/components/reviews/CourseReviewForm';
+import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 
-interface Props {
-  params: { courseId: string };
-}
+const CourseReviewForm = dynamic(() => import('@/components/reviews/CourseReviewForm'), { ssr: false });
 
-export default function NewReviewPage({ params }: Props) {
-  const supabase = createBrowserClient();
+export default function NewReviewPage({ params }: { params: { courseId: string } }) {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error('Failed to get session:', error.message);
-        return;
-      }
+    const getUserId = async () => {
+      const supabase = (await import('@/lib/supabase')).createBrowserClient();
+      const { data } = await supabase.auth.getSession();
       if (data?.session?.user?.id) {
         setUserId(data.session.user.id);
       }
     };
 
-    fetchSession();
+    getUserId();
   }, []);
 
-  if (!userId) return <p className="text-center mt-10">Loading user...</p>;
+  if (!userId) return <p className="text-center mt-10">Loading...</p>;
 
   return (
     <div className="p-6">

@@ -164,12 +164,12 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold mb-3">Course Ranking</h3>
-              <CourseRankingDisplay course={course} />
+              {course?.name ? <CourseRankingDisplay course={course} /> : <p className="text-red-500">Course data incomplete</p>}
             </div>
 
             <div>
               <h3 className="text-lg font-semibold mb-3">Weather</h3>
-              <CourseWeather course={course} />
+              {course?.name ? <CourseWeather course={course} /> : <p className="text-red-500">Weather data unavailable</p>}
             </div>
 
             <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
@@ -212,4 +212,3 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
     return notFound();
   }
 }
-

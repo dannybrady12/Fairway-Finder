@@ -57,7 +57,6 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
         console.error('Error fetching user review:', err);
       }
     }
-    }
 
     return (
       <div className="max-w-6xl mx-auto px-4 py-8">

@@ -1,5 +1,4 @@
 import { createServerSupabaseClient } from '@/lib/supabaseServer';
-import Image from 'next/image';
 import Link from 'next/link';
 
 export default async function HomeFeedPage() {
@@ -8,13 +7,17 @@ export default async function HomeFeedPage() {
   const { data: { session } } = await supabase.auth.getSession();
   const currentUser = session?.user;
 
-  const { data: courses } = await supabase
+  const { data: courses = [] } = await supabase
     .from('courses')
     .select('*')
-    .limit(5)
-    .order('rating', { ascending: false });
+    .order('rating', { ascending: false })
+    .limit(10);
 
-  const { data: rounds } = currentUser ? await supabase
+  const validCourses = courses.filter(
+    (c) => c?.name && c?.city && c?.state
+  );
+
+  const { data: rounds = [] } = currentUser ? await supabase
     .from('scorecards')
     .select('*, course:courses(name, city, state, image_url)')
     .eq('user_id', currentUser.id)
@@ -29,35 +32,30 @@ export default async function HomeFeedPage() {
       <section>
         <h2 className="text-2xl font-semibold mb-4">Top Rated Courses</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses?.map((course) => (
-            <div key={course.id} className="bg-white shadow rounded-lg overflow-hidden">
-              {course.image_url && (
-                <Image
-                  src={course.image_url}
-                  alt={course.name}
-                  width={400}
-                  height={200}
-                  className="w-full h-48 object-cover"
-                />
-              )}
-              <div className="p-4">
-                <h3 className="text-lg font-bold">{course.name}</h3>
-                <p className="text-sm text-gray-500">{course.city}, {course.state}</p>
-                <p className="text-sm mt-1 text-yellow-600">⭐ {course.rating || 'N/A'}</p>
-                <Link
-                  href={`/main/courses/${course.id}`}
-                  className="mt-3 inline-block text-green-700 hover:underline text-sm"
-                >
-                  View Course
-                </Link>
+          {validCourses.length > 0 ? (
+            validCourses.map((course) => (
+              <div key={course.id} className="bg-white shadow rounded-lg overflow-hidden">
+                <div className="p-4">
+                  <h3 className="text-lg font-bold">{course.name} - {course.city}</h3>
+                  <p className="text-sm text-gray-500">{course.state}</p>
+                  <p className="text-sm mt-1 text-yellow-600">⭐ {typeof course.rating === 'number' ? course.rating.toFixed(1) : 'N/A'}</p>
+                  <Link
+                    href={`/main/courses/${course.id}`}
+                    className="mt-3 inline-block text-green-700 hover:underline text-sm"
+                  >
+                    View Course
+                  </Link>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="text-gray-500">No valid courses found.</p>
+          )}
         </div>
       </section>
 
       {/* My Recent Rounds */}
-      {currentUser && rounds && rounds.length > 0 && (
+      {currentUser && rounds.length > 0 && (
         <section>
           <h2 className="text-2xl font-semibold mb-4">My Recent Rounds</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

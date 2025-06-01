@@ -212,3 +212,4 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
     return notFound();
   }
 }
+

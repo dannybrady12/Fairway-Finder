@@ -4,24 +4,19 @@ import type { NextRequest } from 'next/server';
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
+
+  // Initialize Supabase middleware client
   const supabase = createMiddlewareClient({ req, res });
-  
-  // Refresh session if expired
+
+  // Refresh session (if needed)
   await supabase.auth.getSession();
-  
+
   return res;
 }
 
+// Only run middleware on routes that need auth — exclude public routes like /courses
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public (public files)
-     * - auth (auth pages)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|public|auth).*)',
+    '/((?!_next/static|_next/image|favicon.ico|public|auth|courses).*)',
   ],
-}
+};

@@ -13,25 +13,19 @@ export default function NewReviewPage({ params }: Props) {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Don't call supabase.auth.getUser() directly in the browser context on load
-    const getUserId = async () => {
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession();
-
+    const fetchSession = async () => {
+      const { data, error } = await supabase.auth.getSession();
       if (error) {
         console.error('Failed to get session:', error.message);
         return;
       }
-
-      if (session?.user?.id) {
-        setUserId(session.user.id);
+      if (data?.session?.user?.id) {
+        setUserId(data.session.user.id);
       }
     };
 
-    getUserId();
-  }, [supabase]);
+    fetchSession();
+  }, []);
 
   if (!userId) return <p className="text-center mt-10">Loading user...</p>;
 

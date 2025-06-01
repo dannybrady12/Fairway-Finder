@@ -32,7 +32,6 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
       .order('hole_number', { ascending: true });
 
     if (holesError) console.error('Holes fetch error:', holesError);
-    console.log('Holes:', holes);
 
     const { data: images = [], error: imagesError } = await supabase
       .from('course_images')
@@ -41,7 +40,6 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
       .order('is_primary', { ascending: false });
 
     if (imagesError) console.error('Images fetch error:', imagesError);
-    console.log('Images:', images);
 
     const { data: reviews = [], error: reviewsError } = await supabase
       .from('course_reviews')
@@ -50,7 +48,6 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
       .order('created_at', { ascending: false });
 
     if (reviewsError) console.error('Reviews fetch error:', reviewsError);
-    console.log('Reviews:', reviews);
 
     const sessionResult = await supabase.auth.getSession();
     const session = sessionResult?.data?.session ?? null;
@@ -75,12 +72,12 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <h1 className="text-3xl font-bold mb-2">{course.name}</h1>
+            <h1 className="text-3xl font-bold mb-2">{course?.name || 'Unnamed Course'}</h1>
             <div className="text-gray-600 mb-4">
-              {course.city}, {course.state}, {course.country}
+              {course?.city}, {course?.state}, {course?.country}
             </div>
 
-            {images.length > 0 && images[0].image_url ? (
+            {images?.[0]?.image_url ? (
               <div className="relative h-80 rounded-lg overflow-hidden mb-4">
                 <Image src={images[0].image_url} alt={course.name} fill className="object-cover" />
               </div>
@@ -91,25 +88,15 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
             )}
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-500">Par</div>
-                <div className="text-xl font-semibold">{course.par || 'N/A'}</div>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-500">Holes</div>
-                <div className="text-xl font-semibold">{course.total_holes}</div>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-500">Rating</div>
-                <div className="text-xl font-semibold">{course.rating || 'N/A'}</div>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-500">Slope</div>
-                <div className="text-xl font-semibold">{course.slope || 'N/A'}</div>
-              </div>
+              {['par', 'total_holes', 'rating', 'slope'].map((field, idx) => (
+                <div key={idx} className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-500">{field.replace('_', ' ').toUpperCase()}</div>
+                  <div className="text-xl font-semibold">{course?.[field] || 'N/A'}</div>
+                </div>
+              ))}
             </div>
 
-            {course.description && (
+            {course?.description && (
               <div className="mb-8">
                 <h2 className="text-xl font-semibold mb-3">About</h2>
                 <p className="text-gray-700">{course.description}</p>
@@ -149,7 +136,7 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
                 <h2 className="text-xl font-semibold">Reviews</h2>
                 {reviews.length > 0 && (
                   <span className="text-sm text-gray-600">
-                    {reviews.length} review{reviews.length > 1 ? 's' : ''} · Avg: {course.rating?.toFixed(1) || 'N/A'}
+                    {reviews.length} review{reviews.length > 1 ? 's' : ''} · Avg: {course?.rating?.toFixed(1) || 'N/A'}
                   </span>
                 )}
               </div>
@@ -193,14 +180,14 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
             <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
               <h3 className="text-lg font-semibold mb-3">Contact Information</h3>
               <div className="space-y-2 text-gray-700">
-                {course.phone && <div><strong>Phone:</strong> {course.phone}</div>}
-                {course.email && <div><strong>Email:</strong> {course.email}</div>}
-                {course.website && (
+                {course?.phone && <div><strong>Phone:</strong> {course.phone}</div>}
+                {course?.email && <div><strong>Email:</strong> {course.email}</div>}
+                {course?.website && (
                   <div>
                     <strong>Website:</strong> <a href={course.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Visit</a>
                   </div>
                 )}
-                {course.address && (
+                {course?.address && (
                   <div><strong>Address:</strong> {course.address}, {course.city}, {course.state} {course.postal_code}</div>
                 )}
               </div>

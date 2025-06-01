@@ -11,9 +11,9 @@ export default function NewReviewPage({ params }: { params: { courseId: string }
 
   useEffect(() => {
     const getUserId = async () => {
-      // Import the Supabase client inside the effect — client-only
-      const { createBrowserClient } = await import('@/lib/supabase');
-      const supabase = createBrowserClient();
+      // Dynamically import the client-safe Supabase function
+      const { createSupabaseClient } = await import('@/lib/supabase');
+      const supabase = createSupabaseClient();
       const { data } = await supabase.auth.getSession();
       if (data?.session?.user?.id) {
         setUserId(data.session.user.id);
@@ -31,3 +31,4 @@ export default function NewReviewPage({ params }: { params: { courseId: string }
     </div>
   );
 }
+

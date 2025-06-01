@@ -11,44 +11,62 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
   const supabase = createServerSupabaseClient();
 
   try {
+    console.log('Course Detail Page Params:', params);
+
     const { data: course, error: courseError } = await supabase
       .from('courses')
       .select('*')
       .eq('id', params.id)
       .single();
 
-    if (!course || courseError) return notFound();
+    if (courseError) console.error('Course fetch error:', courseError);
+    if (!course) {
+      console.warn('No course found for ID:', params.id);
+      return notFound();
+    }
 
-    const { data: holes = [] } = await supabase
+    const { data: holes = [], error: holesError } = await supabase
       .from('course_holes')
       .select('*')
       .eq('course_id', params.id)
       .order('hole_number', { ascending: true });
 
-    const { data: images = [] } = await supabase
+    if (holesError) console.error('Holes fetch error:', holesError);
+    console.log('Holes:', holes);
+
+    const { data: images = [], error: imagesError } = await supabase
       .from('course_images')
       .select('*')
       .eq('course_id', params.id)
       .order('is_primary', { ascending: false });
 
-    const { data: reviews = [] } = await supabase
+    if (imagesError) console.error('Images fetch error:', imagesError);
+    console.log('Images:', images);
+
+    const { data: reviews = [], error: reviewsError } = await supabase
       .from('course_reviews')
       .select('*, user:users(*)')
       .eq('course_id', params.id)
       .order('created_at', { ascending: false });
 
-    const { data: { session } } = await supabase.auth.getSession();
+    if (reviewsError) console.error('Reviews fetch error:', reviewsError);
+    console.log('Reviews:', reviews);
+
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) console.error('Session fetch error:', sessionError);
+    if (!session) console.warn('No session returned from Supabase');
     const currentUser = session?.user;
 
     let userReview = null;
     if (currentUser) {
-      const { data: existingReview } = await supabase
+      const { data: existingReview, error: userReviewError } = await supabase
         .from('course_reviews')
         .select('*')
         .eq('course_id', params.id)
         .eq('user_id', currentUser.id)
         .single();
 
+      if (userReviewError) console.error('User review fetch error:', userReviewError);
       userReview = existingReview || null;
     }
 
@@ -207,7 +225,8 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
       </div>
     );
   } catch (err) {
-    console.error('Course Detail Error:', err);
+    console.error('Unhandled error in Course Detail Page:', err);
     return notFound();
   }
 }
+

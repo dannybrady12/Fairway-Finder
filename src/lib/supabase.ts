@@ -1,6 +1,6 @@
-import { createBrowserClient } from '@supabase/ssr';
+import { createBrowserClient as createSupabaseClient } from '@supabase/ssr';
 
-export const createBrowserClientWrapper = () => {
+export const createBrowserClient = () => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -8,5 +8,5 @@ export const createBrowserClientWrapper = () => {
     throw new Error('Supabase URL or Anon Key is missing');
   }
 
-  return createBrowserClient(url, key);
+  return createSupabaseClient(url, key);
 };

@@ -1,17 +1,16 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Database } from '@/types/database.types';
+import { createBrowserClient } from '@supabase/ssr';
 
-export function createClient() {
-  return createClientComponentClient<Database>({
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  });
+// For legacy usage throughout your app
+export function createSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    throw new Error('Supabase URL or Anon Key is missing');
+  }
+
+  return createBrowserClient(url, key);
 }
 
-// Add the missing createBrowserClient function that's being imported by multiple components
-export function createBrowserClient() {
-  return createClientComponentClient<Database>({
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  });
-}
+// For components expecting the old import style
+export { createSupabaseClient as createBrowserClient };

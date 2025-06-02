@@ -35,13 +35,16 @@ function LoginFormContent() {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       console.log('Login response:', data, error);
-      if (error) throw error;
+
+      if (error) {
+        throw new Error(error.message || 'Login failed: no error message returned');
+      }
 
       const redirectTo = searchParams?.get('redirectedFrom') || '/';
       router.replace(redirectTo);
     } catch (err: any) {
       console.error('Login failed:', err);
-      setError(err.message || 'Failed to sign in');
+      setError(err.message || 'Unknown error during sign in. Please try again.');
     } finally {
       setIsLoading(false);
     }

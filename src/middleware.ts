@@ -4,19 +4,27 @@ import type { NextRequest } from 'next/server';
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
-
-  // Initialize Supabase middleware client
   const supabase = createMiddlewareClient({ req, res });
 
-  // Refresh session (if needed)
-  await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const pathname = req.nextUrl.pathname;
+
+  // Protect all /main/* routes
+  if (!session && pathname.startsWith('/main')) {
+    const redirectUrl = req.nextUrl.clone();
+    redirectUrl.pathname = '/login';
+    redirectUrl.searchParams.set('redirectedFrom', pathname);
+    return NextResponse.redirect(redirectUrl);
+  }
 
   return res;
 }
 
-// Only run middleware on routes that need auth — exclude public routes like /courses
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|public|auth|courses).*)',
+    '/main/:path*', // Only guard /main/* routes for now
   ],
 };

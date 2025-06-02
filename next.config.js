@@ -8,8 +8,9 @@ const nextConfig = {
   },
   output: 'standalone',
   experimental: {
-    appDir: true
-  }
+    // ✅ This enables the /app directory (required for dynamic routing)
+    appDir: true,
+  },
 };
 
 module.exports = nextConfig;

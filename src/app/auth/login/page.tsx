@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 
-function LoginForm() {
+function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -94,6 +94,14 @@ function LoginForm() {
         </Link>
       </div>
     </form>
+  );
+}
+
+function LoginForm() {
+  return (
+    <Suspense fallback={<div className="text-center">Loading...</div>}>
+      <LoginFormContent />
+    </Suspense>
   );
 }
 

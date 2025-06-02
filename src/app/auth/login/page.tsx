@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [supabase, setSupabase] = useState<any>(null);
 
   const [email, setEmail] = useState('');
@@ -39,8 +40,9 @@ export default function LoginPage() {
 
       if (error) throw error;
 
-      router.push('/');
-      router.refresh();
+      // 🔁 Redirect to the original destination or fallback to home
+      const redirectTo = searchParams.get('redirectedFrom') || '/';
+      router.replace(redirectTo);
     } catch (err: any) {
       setError(err.message || 'Failed to sign in');
       setIsLoading(false);

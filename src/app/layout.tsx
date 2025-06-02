@@ -1,25 +1,18 @@
-import { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import './globals.css';
+'use client';
 
-const inter = Inter({ subsets: ['latin'] });
+import { createBrowserSupabaseClient } from '@supabase/auth-helpers-nextjs';
+import { SessionContextProvider } from '@supabase/auth-helpers-react';
+import { useState } from 'react';
 
-export const metadata: Metadata = {
-  title: 'Golf Social App',
-  description: 'Connect with golfers, track scores, and discover courses',
-};
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const [supabaseClient] = useState(() => createBrowserSupabaseClient());
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <main className="min-h-screen bg-gray-50">
+      <body>
+        <SessionContextProvider supabaseClient={supabaseClient}>
           {children}
-        </main>
+        </SessionContextProvider>
       </body>
     </html>
   );

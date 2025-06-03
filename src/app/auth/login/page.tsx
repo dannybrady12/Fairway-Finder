@@ -33,6 +33,7 @@ function LoginFormContent() {
     setError(null);
 
     try {
+      console.log('Attempting login with email and password...');
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       console.log('Login response:', data, error);
 

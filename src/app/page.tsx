@@ -2,7 +2,7 @@ import { createServerSupabaseClient } from '@/lib/supabaseServer';
 import Link from 'next/link';
 
 export default async function HomeFeedPage() {
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
 
   const {
     data: { session },
@@ -19,7 +19,7 @@ export default async function HomeFeedPage() {
     (c) => c?.name && c?.city && c?.state
   );
 
-  const { data: rounds = [] } = currentUser
+  const roundsData = currentUser
     ? await supabase
         .from('scorecards')
         .select('*, course:courses(name, city, state, image_url)')
@@ -27,6 +27,8 @@ export default async function HomeFeedPage() {
         .order('created_at', { ascending: false })
         .limit(3)
     : { data: [] };
+
+  const rounds = roundsData?.data ?? [];
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10 space-y-10">
@@ -36,7 +38,7 @@ export default async function HomeFeedPage() {
       <section>
         <h2 className="text-2xl font-semibold mb-4">Top Rated Courses</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {validCourses?.length > 0 ? (
+          {validCourses.length > 0 ? (
             validCourses.map((course) => (
               <div
                 key={course.id}
@@ -69,7 +71,7 @@ export default async function HomeFeedPage() {
       </section>
 
       {/* My Recent Rounds */}
-      {currentUser && rounds?.length > 0 && (
+      {currentUser && rounds.length > 0 && (
         <section>
           <h2 className="text-2xl font-semibold mb-4">My Recent Rounds</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

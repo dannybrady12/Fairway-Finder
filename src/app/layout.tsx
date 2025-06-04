@@ -4,17 +4,26 @@ import { useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { SessionContextProvider } from '@supabase/auth-helpers-react';
 
+// ✅ Debug line to confirm env variables are loaded
+console.log('ENV CHECK:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [supabaseClient] = useState(() =>
-    createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-  );
+  const [supabaseClient] = useState(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!url || !key) {
+      console.error('❌ Supabase env vars are missing');
+    } else {
+      console.log('✅ Supabase env vars loaded');
+    }
+
+    return createBrowserClient(url!, key!);
+  });
 
   return (
     <html lang="en">
@@ -26,4 +35,3 @@ export default function RootLayout({
     </html>
   );
 }
-

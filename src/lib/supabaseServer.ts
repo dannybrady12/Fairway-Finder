@@ -1,10 +1,14 @@
+// ✅ Updated supabaseServer.ts with temporary type workaround and proper async cookie handling
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { Database } from '@/types/supabase';
 
-export function createServerSupabaseClient() {
-  const cookieStore = cookies();
-  
+// Temporary workaround for missing type file
+// Replace with your actual Supabase type definition later if desired
+type Database = any;
+
+export async function createServerSupabaseClient() {
+  const cookieStore = await cookies();
+
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

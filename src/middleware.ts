@@ -12,10 +12,9 @@ export async function middleware(req: NextRequest) {
 
   const pathname = req.nextUrl.pathname;
 
-  // Protect all /main/* routes
   if (!session && pathname.startsWith('/main')) {
     const redirectUrl = req.nextUrl.clone();
-    redirectUrl.pathname = '/login';
+    redirectUrl.pathname = '/auth/login';
     redirectUrl.searchParams.set('redirectedFrom', pathname);
     return NextResponse.redirect(redirectUrl);
   }
@@ -24,7 +23,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/main/:path*', // Only guard /main/* routes for now
-  ],
+  matcher: ['/main/:path*'], // Only protect /main routes
 };

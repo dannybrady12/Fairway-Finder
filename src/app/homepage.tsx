@@ -1,7 +1,7 @@
 import { createServerSupabaseClient } from '@/lib/supabaseServer';
 import Link from 'next/link';
 
-export default async function HomeFeedPage() {
+export default async function HomePage() {
   const supabase = await createServerSupabaseClient();
   const {
     data: { session },

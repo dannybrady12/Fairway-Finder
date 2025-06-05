@@ -1,10 +1,10 @@
 'use client';
 
+import './globals.css';
 import { useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { SessionContextProvider } from '@supabase/auth-helpers-react';
 
-// ✅ Debug line to confirm env variables are loaded
 console.log('ENV CHECK:', process.env.NEXT_PUBLIC_SUPABASE_URL);
 
 export default function RootLayout({
@@ -27,7 +27,7 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <body>
+      <body className="min-h-screen bg-white text-black">
         <SessionContextProvider supabaseClient={supabaseClient} initialSession={null}>
           {children}
         </SessionContextProvider>

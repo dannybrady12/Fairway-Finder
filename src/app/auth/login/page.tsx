@@ -4,31 +4,20 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, Loader2 } from 'lucide-react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [supabase, setSupabase] = useState<any>(null);
+  const [supabase] = useState(() => createClientComponentClient());
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadSupabase = async () => {
-      const { createBrowserClient } = await import('@/lib/supabase');
-      const client = createBrowserClient();
-      setSupabase(client);
-    };
-
-    loadSupabase();
-  }, []);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supabase) return;
-
     setIsLoading(true);
     setError(null);
 
@@ -41,8 +30,10 @@ function LoginFormContent() {
         throw new Error(error.message || 'Login failed: no error message returned');
       }
 
-      const redirectTo = searchParams?.get('redirectedFrom') || '/';
-      router.replace(redirectTo);
+      const redirectTo = searchParams?.get('redirectedFrom');
+      console.log('Redirecting to:', redirectTo);
+
+      router.replace(typeof redirectTo === 'string' ? redirectTo : '/');
     } catch (err: any) {
       console.error('Login failed:', err);
       setError(err.message || 'Unknown error during sign in. Please try again.');

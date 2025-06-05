@@ -3,7 +3,6 @@ import Link from 'next/link';
 
 export default async function HomeFeedPage() {
   const supabase = await createServerSupabaseClient();
-
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -31,37 +30,34 @@ export default async function HomeFeedPage() {
   const rounds = roundsData?.data ?? [];
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10 space-y-10">
-      <h1 className="text-3xl font-bold">Welcome to Fairway Finder</h1>
+    <div className="max-w-6xl mx-auto px-4 py-12 space-y-14">
+      <h1 className="text-4xl font-extrabold text-center text-gray-900">
+        Welcome to <span className="text-green-600">Fairway Finder</span>
+      </h1>
 
       {/* Featured Courses */}
       <section>
-        <h2 className="text-2xl font-semibold mb-4">Top Rated Courses</h2>
+        <h2 className="text-2xl font-semibold mb-6 text-gray-800">Top Rated Courses</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {validCourses.length > 0 ? (
             validCourses.map((course) => (
               <div
                 key={course.id}
-                className="bg-white shadow rounded-lg overflow-hidden"
+                className="bg-white border rounded-xl shadow-sm hover:shadow-md transition p-5"
               >
-                <div className="p-4">
-                  <h3 className="text-lg font-bold">
-                    {course.name} - {course.city}
-                  </h3>
-                  <p className="text-sm text-gray-500">{course.state}</p>
-                  <p className="text-sm mt-1 text-yellow-600">
-                    ⭐{' '}
-                    {typeof course.rating === 'number'
-                      ? course.rating.toFixed(1)
-                      : 'N/A'}
-                  </p>
-                  <Link
-                    href={`/main/courses/${course.id}`}
-                    className="mt-3 inline-block text-green-700 hover:underline text-sm"
-                  >
-                    View Course
-                  </Link>
-                </div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {course.name} <span className="text-sm text-gray-500">– {course.city}</span>
+                </h3>
+                <p className="text-sm text-gray-500">{course.state}</p>
+                <p className="text-sm mt-1 text-yellow-600">
+                  ⭐ {typeof course.rating === 'number' ? course.rating.toFixed(1) : 'N/A'}
+                </p>
+                <Link
+                  href={`/main/courses/${course.id}`}
+                  className="inline-block mt-3 text-green-600 hover:underline text-sm font-medium"
+                >
+                  View Course
+                </Link>
               </div>
             ))
           ) : (
@@ -73,21 +69,21 @@ export default async function HomeFeedPage() {
       {/* My Recent Rounds */}
       {currentUser && rounds.length > 0 && (
         <section>
-          <h2 className="text-2xl font-semibold mb-4">My Recent Rounds</h2>
+          <h2 className="text-2xl font-semibold mb-6 text-gray-800">My Recent Rounds</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {rounds.map((round) => (
               <div
                 key={round.id}
-                className="border rounded-lg p-4 bg-gray-50"
+                className="bg-white border rounded-xl p-5 shadow-sm hover:shadow-md"
               >
-                <h3 className="text-lg font-bold">
+                <h3 className="text-lg font-semibold">
                   {round.course?.name || 'Unknown Course'}
                 </h3>
                 <p className="text-sm text-gray-500">
                   {round.course?.city || '—'}, {round.course?.state || '—'}
                 </p>
                 <p className="text-sm mt-1">
-                  Score: <strong>{round.total_score || 'N/A'}</strong>
+                  Score: <span className="font-medium">{round.total_score || 'N/A'}</span>
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
                   Played on{' '}
@@ -101,19 +97,19 @@ export default async function HomeFeedPage() {
         </section>
       )}
 
-      {/* Actions */}
+      {/* Quick Links */}
       <section className="text-center">
-        <h2 className="text-xl font-medium mb-2">Quick Links</h2>
+        <h2 className="text-xl font-medium mb-4 text-gray-800">Quick Links</h2>
         <div className="flex flex-col md:flex-row justify-center gap-4">
           <Link
             href="/courses"
-            className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="inline-block px-6 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700"
           >
             Browse All Courses
           </Link>
           <Link
             href="/rounds/new"
-            className="px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700"
+            className="inline-block px-6 py-3 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700"
           >
             Start New Round
           </Link>
